@@ -1,0 +1,12 @@
+{
+  "timestamp": "2026-01-30T12:07:30.094Z",
+  "severity": "critical",
+  "type": "frustration",
+  "summary": "检测到用户挫折行为（挫折指数: 100）",
+  "details": {
+    "frustrationScore": 100,
+    "rageClickCount": 0,
+    "deadClickCount": 11,
+    "totalInteractions": 11
+  }
+}

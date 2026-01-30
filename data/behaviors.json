@@ -1,0 +1,317 @@
+{
+  "version": "1.0",
+  "behaviors": [
+    {
+      "id": "ml0u8tt8-4z4gp7n",
+      "timestamp": 1769774839031,
+      "sessionId": "ml0s3ks1-8d4ozwm0",
+      "type": "dead_click",
+      "target": {
+        "selector": "DIV:nth-of-type(1)",
+        "tagName": "div"
+      },
+      "position": {
+        "x": 58.34765625,
+        "y": 231.81640625
+      },
+      "data": {
+        "clickCount": 1,
+        "frustrations": [
+          "dead_click"
+        ],
+        "hasPageActivity": false
+      },
+      "semanticHints": [
+        "点击后无页面响应，按钮可能未绑定事件"
+      ]
+    },
+    {
+      "id": "ml0u8v4m-0894jcr",
+      "timestamp": 1769774840736,
+      "sessionId": "ml0s3ks1-8d4ozwm0",
+      "type": "dead_click",
+      "target": {
+        "selector": "H3:nth-of-type(1)",
+        "tagName": "h3"
+      },
+      "position": {
+        "x": 286.5390625,
+        "y": 286.49609375
+      },
+      "data": {
+        "clickCount": 1,
+        "frustrations": [
+          "dead_click"
+        ],
+        "hasPageActivity": false
+      },
+      "semanticHints": [
+        "点击后无页面响应，按钮可能未绑定事件"
+      ]
+    },
+    {
+      "id": "ml0u8x9g-19n2qyn",
+      "timestamp": 1769774843503,
+      "sessionId": "ml0s3ks1-8d4ozwm0",
+      "type": "dead_click",
+      "target": {
+        "selector": "H3:nth-of-type(1)",
+        "tagName": "h3"
+      },
+      "position": {
+        "x": 105.6640625,
+        "y": 301.41015625
+      },
+      "data": {
+        "clickCount": 1,
+        "frustrations": [
+          "dead_click"
+        ],
+        "hasPageActivity": false
+      },
+      "semanticHints": [
+        "点击后无页面响应，按钮可能未绑定事件"
+      ]
+    },
+    {
+      "id": "ml0u8xnl-sxye0cr",
+      "timestamp": 1769774844012,
+      "sessionId": "ml0s3ks1-8d4ozwm0",
+      "type": "dead_click",
+      "target": {
+        "selector": "DIV:nth-of-type(1)",
+        "tagName": "div"
+      },
+      "position": {
+        "x": 57.53125,
+        "y": 394.41796875
+      },
+      "data": {
+        "clickCount": 1,
+        "frustrations": [
+          "dead_click"
+        ],
+        "hasPageActivity": false
+      },
+      "semanticHints": [
+        "点击后无页面响应，按钮可能未绑定事件"
+      ]
+    },
+    {
+      "id": "ml0u8y4m-7paepku",
+      "timestamp": 1769774844626,
+      "sessionId": "ml0s3ks1-8d4ozwm0",
+      "type": "dead_click",
+      "target": {
+        "selector": "P:nth-of-type(1)",
+        "tagName": "p"
+      },
+      "position": {
+        "x": 133.39453125,
+        "y": 464.8671875
+      },
+      "data": {
+        "clickCount": 1,
+        "frustrations": [
+          "dead_click"
+        ],
+        "hasPageActivity": false
+      },
+      "semanticHints": [
+        "点击后无页面响应，按钮可能未绑定事件"
+      ]
+    },
+    {
+      "id": "ml0u8yjw-cu7wyqw",
+      "timestamp": 1769774845176,
+      "sessionId": "ml0s3ks1-8d4ozwm0",
+      "type": "dead_click",
+      "target": {
+        "selector": "DIV:nth-of-type(1)",
+        "tagName": "div"
+      },
+      "position": {
+        "x": 39.83203125,
+        "y": 522.9375
+      },
+      "data": {
+        "clickCount": 1,
+        "frustrations": [
+          "dead_click"
+        ],
+        "hasPageActivity": false
+      },
+      "semanticHints": [
+        "点击后无页面响应，按钮可能未绑定事件"
+      ]
+    },
+    {
+      "id": "ml0u8z7u-543s63e",
+      "timestamp": 1769774846036,
+      "sessionId": "ml0s3ks1-8d4ozwm0",
+      "type": "dead_click",
+      "target": {
+        "selector": "DIV:nth-of-type(1)",
+        "tagName": "div"
+      },
+      "position": {
+        "x": 43.26953125,
+        "y": 571.44921875
+      },
+      "data": {
+        "clickCount": 2,
+        "frustrations": [
+          "dead_click"
+        ],
+        "hasPageActivity": false
+      },
+      "semanticHints": [
+        "点击后无页面响应，按钮可能未绑定事件"
+      ]
+    },
+    {
+      "id": "ml0u90nu-t9lltaz",
+      "timestamp": 1769774847910,
+      "sessionId": "ml0s3ks1-8d4ozwm0",
+      "type": "dead_click",
+      "target": {
+        "selector": "DIV:nth-of-type(2)",
+        "tagName": "div"
+      },
+      "position": {
+        "x": 291.00390625,
+        "y": 360.86328125
+      },
+      "data": {
+        "clickCount": 1,
+        "frustrations": [
+          "dead_click"
+        ],
+        "hasPageActivity": false
+      },
+      "semanticHints": [
+        "点击后无页面响应，按钮可能未绑定事件"
+      ]
+    },
+    {
+      "id": "ml0u913e-fzjulrd",
+      "timestamp": 1769774848468,
+      "sessionId": "ml0s3ks1-8d4ozwm0",
+      "type": "dead_click",
+      "target": {
+        "selector": "P:nth-of-type(1)",
+        "tagName": "p"
+      },
+      "position": {
+        "x": 271.92578125,
+        "y": 454.76953125
+      },
+      "data": {
+        "clickCount": 1,
+        "frustrations": [
+          "dead_click"
+        ],
+        "hasPageActivity": false
+      },
+      "semanticHints": [
+        "点击后无页面响应，按钮可能未绑定事件"
+      ]
+    },
+    {
+      "id": "ml0u91gt-0q3g2n5",
+      "timestamp": 1769774848952,
+      "sessionId": "ml0s3ks1-8d4ozwm0",
+      "type": "dead_click",
+      "target": {
+        "selector": "DIV:nth-of-type(3)",
+        "tagName": "div"
+      },
+      "position": {
+        "x": 303.75390625,
+        "y": 572.328125
+      },
+      "data": {
+        "clickCount": 1,
+        "frustrations": [
+          "dead_click"
+        ],
+        "hasPageActivity": false
+      },
+      "semanticHints": [
+        "点击后无页面响应，按钮可能未绑定事件"
+      ]
+    },
+    {
+      "id": "ml0u91vl-av5hlql",
+      "timestamp": 1769774849483,
+      "sessionId": "ml0s3ks1-8d4ozwm0",
+      "type": "dead_click",
+      "target": {
+        "selector": "DIV:nth-of-type(2)",
+        "tagName": "div"
+      },
+      "position": {
+        "x": 288.921875,
+        "y": 381.09765625
+      },
+      "data": {
+        "clickCount": 1,
+        "frustrations": [
+          "dead_click"
+        ],
+        "hasPageActivity": false
+      },
+      "semanticHints": [
+        "点击后无页面响应，按钮可能未绑定事件"
+      ]
+    },
+    {
+      "id": "ml0u929s-azmii29",
+      "timestamp": 1769774849994,
+      "sessionId": "ml0s3ks1-8d4ozwm0",
+      "type": "dead_click",
+      "target": {
+        "selector": "DIV:nth-of-type(1)",
+        "tagName": "div"
+      },
+      "position": {
+        "x": 277.67578125,
+        "y": 237.45703125
+      },
+      "data": {
+        "clickCount": 1,
+        "frustrations": [
+          "dead_click"
+        ],
+        "hasPageActivity": false
+      },
+      "semanticHints": [
+        "点击后无页面响应，按钮可能未绑定事件"
+      ]
+    },
+    {
+      "id": "ml0u92rz-jw3mutj",
+      "timestamp": 1769774850650,
+      "sessionId": "ml0s3ks1-8d4ozwm0",
+      "type": "dead_click",
+      "target": {
+        "selector": "DIV:nth-of-type(1)",
+        "tagName": "div"
+      },
+      "position": {
+        "x": 277.67578125,
+        "y": 237.45703125
+      },
+      "data": {
+        "clickCount": 2,
+        "frustrations": [
+          "dead_click"
+        ],
+        "hasPageActivity": false
+      },
+      "semanticHints": [
+        "点击后无页面响应，按钮可能未绑定事件"
+      ]
+    }
+  ]
+}

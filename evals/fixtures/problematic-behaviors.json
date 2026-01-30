@@ -1,0 +1,34 @@
+[
+  {
+    "event_type": "click",
+    "timestamp": 1706601600000,
+    "payload": {"element": "button#ok"}
+  },
+  {
+    "event_type": "scroll"
+  },
+  {
+    "timestamp": "not-a-number",
+    "payload": {}
+  },
+  {
+    "event_type": null,
+    "timestamp": 1706601602000
+  },
+  {
+    "event_type": "",
+    "timestamp": 1706601603000
+  },
+  {
+    "event_type": "input",
+    "timestamp": 1706601604000,
+    "payload": {"field": "name"}
+  },
+  {
+    "event_type": "click",
+    "timestamp": -1
+  },
+  {
+    "random_field": "some_value"
+  }
+]

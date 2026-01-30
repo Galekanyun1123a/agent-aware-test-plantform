@@ -1,0 +1,243 @@
+# 评估测试工作流
+# 支持自动触发和手动触发，支持并行执行
+
+name: Evals
+
+on:
+  # PR 中 evals 相关文件变更时自动触发
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'evals/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/evals.yml'
+
+  # 推送到主分支时自动触发（evals 文件变更）
+  push:
+    branches: [main, master]
+    paths:
+      - 'evals/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+
+  # 定时触发（每天凌晨 3 点 UTC）
+  schedule:
+    - cron: '0 3 * * *'
+
+  # 手动触发，支持选择任务
+  workflow_dispatch:
+    inputs:
+      eval_mode:
+        description: '执行模式'
+        required: true
+        default: 'parallel'
+        type: choice
+        options:
+          - parallel      # 7 个任务并行
+          - serial        # 串行执行全部
+          - single        # 执行单个任务
+          - stability     # 稳定性测试（多次执行）
+      eval_task:
+        description: '任务 ID（single/stability 模式需要）'
+        required: false
+        default: '001'
+        type: string
+      stability_runs:
+        description: '稳定性测试运行次数'
+        required: false
+        default: '3'
+        type: string
+
+env:
+  NODE_VERSION: '22'
+  PNPM_VERSION: '9.15.0'
+
+concurrency:
+  group: evals-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ==================== 自动触发：并行执行所有任务 ====================
+  evals-parallel:
+    name: Eval Task ${{ matrix.task }}
+    runs-on: ubuntu-latest
+    # 自动触发条件：PR、push、schedule，或手动选择 parallel 模式
+    if: |
+      github.event_name == 'pull_request' ||
+      github.event_name == 'push' ||
+      github.event_name == 'schedule' ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.eval_mode == 'parallel')
+    strategy:
+      fail-fast: false  # 一个失败不影响其他
+      matrix:
+        task: ['001', '002', '003', '004', '005', '006', '007']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run eval task ${{ matrix.task }}
+        run: pnpm eval --task ${{ matrix.task }}
+        env:
+          EVAL_TASK_ID: ${{ matrix.task }}
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-results-${{ matrix.task }}
+          path: evals/results/
+          retention-days: 7
+
+  # ==================== 手动触发：串行执行所有任务 ====================
+  evals-serial:
+    name: Eval All Tasks (Serial)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.eval_mode == 'serial'
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run all evals
+        run: pnpm test:evals
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-results-all
+          path: evals/results/
+          retention-days: 7
+
+  # ==================== 手动触发：执行单个任务 ====================
+  evals-single:
+    name: Eval Single Task (${{ github.event.inputs.eval_task }})
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.eval_mode == 'single'
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run eval task ${{ github.event.inputs.eval_task }}
+        run: pnpm eval --task ${{ github.event.inputs.eval_task }}
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-results-${{ github.event.inputs.eval_task }}
+          path: evals/results/
+          retention-days: 7
+
+  # ==================== 手动触发：稳定性测试 ====================
+  evals-stability:
+    name: Stability Test Run ${{ matrix.run }}
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.eval_mode == 'stability'
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        run: [1, 2, 3]  # 默认 3 次，可通过调整扩展
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run stability test - Run ${{ matrix.run }}
+        run: |
+          echo ">>> 稳定性测试 - 任务 ${{ github.event.inputs.eval_task }} - 运行 #${{ matrix.run }}"
+          pnpm eval --task ${{ github.event.inputs.eval_task }} --results-dir "evals/results/run-${{ matrix.run }}"
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-stability-run-${{ matrix.run }}
+          path: evals/results/
+          retention-days: 7
+
+  # ==================== 汇总报告 ====================
+  summary:
+    name: Evals Summary
+    runs-on: ubuntu-latest
+    needs: [evals-parallel]
+    if: always() && (github.event_name != 'workflow_dispatch' || github.event.inputs.eval_mode == 'parallel')
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: eval-results-*
+          path: all-results/
+          merge-multiple: true
+
+      - name: Generate summary
+        run: |
+          echo "## 评估测试结果汇总" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| 任务 | 状态 |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|------|" >> $GITHUB_STEP_SUMMARY
+          for task in 001 002 003 004 005 006 007; do
+            if [ -d "all-results/" ]; then
+              echo "| $task | ✅ 已执行 |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| $task | ❓ 未知 |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done

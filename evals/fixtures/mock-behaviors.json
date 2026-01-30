@@ -1,0 +1,47 @@
+[
+  {
+    "event_type": "click",
+    "timestamp": 1706601600000,
+    "payload": {
+      "element": "button#submit",
+      "position": { "x": 100, "y": 200 }
+    },
+    "session_id": "test-session-001"
+  },
+  {
+    "event_type": "scroll",
+    "timestamp": 1706601601000,
+    "payload": {
+      "position": 500,
+      "direction": "down"
+    },
+    "session_id": "test-session-001"
+  },
+  {
+    "event_type": "input",
+    "timestamp": 1706601602000,
+    "payload": {
+      "field": "email",
+      "value": "test@example.com"
+    },
+    "session_id": "test-session-001"
+  },
+  {
+    "event_type": "click",
+    "timestamp": 1706601603000,
+    "payload": {
+      "element": "a.link",
+      "href": "/about"
+    },
+    "session_id": "test-session-001"
+  },
+  {
+    "event_type": "page_view",
+    "timestamp": 1706601604000,
+    "payload": {
+      "path": "/about",
+      "referrer": "/"
+    },
+    "session_id": "test-session-001"
+  }
+]

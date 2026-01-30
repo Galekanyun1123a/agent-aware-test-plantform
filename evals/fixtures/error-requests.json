@@ -1,0 +1,65 @@
+{
+  "invalid_json": {
+    "name": "无效 JSON",
+    "body": "not valid json {{{",
+    "contentType": "application/json",
+    "expectStatus": 400
+  },
+  "missing_event_type": {
+    "name": "缺少 event_type",
+    "body": {
+      "timestamp": 1706601600000
+    },
+    "expectStatus": 400
+  },
+  "missing_timestamp": {
+    "name": "缺少 timestamp",
+    "body": {
+      "event_type": "click"
+    },
+    "expectStatus": 400
+  },
+  "invalid_timestamp_type": {
+    "name": "无效 timestamp 类型",
+    "body": {
+      "event_type": "click",
+      "timestamp": "not-a-number"
+    },
+    "expectStatus": 400
+  },
+  "null_event_type": {
+    "name": "event_type 为 null",
+    "body": {
+      "event_type": null,
+      "timestamp": 1706601600000
+    },
+    "expectStatus": 400
+  },
+  "empty_event_type": {
+    "name": "event_type 为空字符串",
+    "body": {
+      "event_type": "",
+      "timestamp": 1706601600000
+    },
+    "expectStatus": 400
+  },
+  "negative_timestamp": {
+    "name": "负数 timestamp",
+    "body": {
+      "event_type": "click",
+      "timestamp": -1
+    },
+    "expectStatus": 400
+  },
+  "valid_request": {
+    "name": "正常请求",
+    "body": {
+      "event_type": "click",
+      "timestamp": 1706601600000,
+      "payload": {
+        "element": "button#submit"
+      }
+    },
+    "expectStatus": 200
+  }
+}
