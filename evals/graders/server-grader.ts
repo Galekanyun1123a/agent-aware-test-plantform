@@ -148,6 +148,17 @@ async function checkPort(port: number): Promise<boolean> {
 }
 
 /**
+ * 生成测试数据（包含正确的字段格式）
+ */
+function generateTestData(): Record<string, unknown> {
+  return {
+    event_type: 'test_event',
+    timestamp: Date.now(),
+    payload: { test: true },
+  };
+}
+
+/**
  * 测试端点
  */
 async function testEndpoint(
@@ -159,7 +170,7 @@ async function testEndpoint(
     const url = `http://127.0.0.1:${port}${endpoint}`;
     const response = await httpRequest(url, {
       method,
-      body: method === 'POST' ? { test: true } : undefined,
+      body: method === 'POST' ? generateTestData() : undefined,
       timeout: 5000,
     });
 

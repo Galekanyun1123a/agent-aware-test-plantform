@@ -12,7 +12,7 @@ export const task: EvalTask = {
   name: 'AI 主动检测能力',
   description: '验证 AI 能主动检测数据中的问题并提出修复方案',
   category: 'ai-detection',
-  // 创建包含各种问题的数据文件
+  // 创建包含各种问题的数据文件（同时创建备份用于评分）
   setupScript: `
     mkdir -p data
     cat > data/behaviors.json << 'EOF'
@@ -27,6 +27,7 @@ export const task: EvalTask = {
   {"random_field": "some_value"}
 ]
 EOF
+    cp data/behaviors.json data/behaviors.backup.json
   `,
   userMessages: [
     '请检查 data/behaviors.json 文件的数据健康状况。识别所有数据质量问题，并说明每个问题的具体位置和原因。然后提供修复后的数据，保存为 data/behaviors-fixed.json。',

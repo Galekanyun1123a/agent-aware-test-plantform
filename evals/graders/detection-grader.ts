@@ -161,50 +161,50 @@ export async function gradeDetection(
   const { issues: expectedIssues, fixedFilePath } = config;
 
   try {
-    // 1. 读取原始数据文件（如果有修复后的文件，先检查原始文件）
-    const originalPath = fixedFilePath || 'data/behaviors.json';
-    const readResult = readDataFile(projectDir, originalPath);
+    // 1. 读取原始数据文件（始终是 data/behaviors.json）
+    const originalPath = 'data/behaviors.json';
+    let originalData: unknown[] | undefined;
 
-    if (!readResult.success) {
-      // 尝试读取备份文件
-      const backupPath = originalPath.replace('.json', '.backup.json');
-      const backupResult = readDataFile(projectDir, backupPath);
+    // 首先尝试读取备份文件（原始数据）
+    const backupPath = 'data/behaviors.backup.json';
+    const backupResult = readDataFile(projectDir, backupPath);
 
-      if (backupResult.success) {
-        details.originalFileRead = true;
-        details.originalData = backupResult.data?.slice(0, 5);
-
-        // 分析原始数据的问题
-        const foundIssues = analyzeDataIssues(backupResult.data!);
-        details.issuesFound = foundIssues;
-
-        // 检查是否检测到预期问题
-        const detection = checkDetectedIssues(foundIssues, expectedIssues);
-        details.detectedIssues = detection.detected;
-        details.missedIssues = detection.missed;
-      } else {
-        return {
-          type: 'detection',
-          passed: false,
-          score: 0,
-          details,
-          error: `无法读取数据文件: ${readResult.error}`,
-        };
-      }
-    } else {
+    if (backupResult.success) {
+      // 如果有备份，使用备份作为原始数据
+      originalData = backupResult.data;
       details.originalFileRead = true;
-
-      // 分析数据问题
-      const foundIssues = analyzeDataIssues(readResult.data!);
-      details.issuesFound = foundIssues;
-
-      // 检查是否检测到预期问题
-      const detection = checkDetectedIssues(foundIssues, expectedIssues);
-      details.detectedIssues = detection.detected;
-      details.missedIssues = detection.missed;
+      details.usedBackup = true;
+    } else {
+      // 没有备份，直接读取原始文件
+      const readResult = readDataFile(projectDir, originalPath);
+      if (readResult.success) {
+        originalData = readResult.data;
+        details.originalFileRead = true;
+        details.usedBackup = false;
+      }
     }
 
-    // 2. 如果有修复后的文件路径，检查修复结果
+    if (!originalData) {
+      return {
+        type: 'detection',
+        passed: false,
+        score: 0,
+        details,
+        error: '无法读取原始数据文件',
+      };
+    }
+
+    // 分析原始数据中的问题
+    const foundIssues = analyzeDataIssues(originalData);
+    details.issuesFound = foundIssues;
+    details.originalData = originalData.slice(0, 5);
+
+    // 检查是否检测到预期问题
+    const detection = checkDetectedIssues(foundIssues, expectedIssues);
+    details.detectedIssues = detection.detected;
+    details.missedIssues = detection.missed;
+
+    // 2. 检查修复后的文件
     if (fixedFilePath) {
       const fixedResult = readDataFile(projectDir, fixedFilePath);
       details.fixedFileExists = fixedResult.success;
@@ -213,18 +213,26 @@ export async function gradeDetection(
         const fixedIssues = analyzeDataIssues(fixedResult.data!);
         details.fixedFileValid = fixedIssues.length === 0;
         details.remainingIssues = fixedIssues;
+        details.fixedRecordCount = fixedResult.data!.length;
       }
     }
 
     // 3. 计算得分
+    // 检测问题得分：检测到的问题类型数 / 预期问题类型数
     const detectedCount = (details.detectedIssues as string[]).length;
     const expectedCount = expectedIssues.length;
     const detectionScore = expectedCount > 0 ? detectedCount / expectedCount : 0;
 
-    // 如果有修复文件，加入修复得分
+    // 如果有修复文件，综合评分
     let score = detectionScore;
-    if (fixedFilePath && details.fixedFileExists) {
-      score = detectionScore * 0.6 + (details.fixedFileValid ? 0.4 : 0.2);
+    if (fixedFilePath) {
+      if (details.fixedFileExists && details.fixedFileValid) {
+        // 修复文件存在且有效：检测分 * 0.4 + 修复分 0.6
+        score = detectionScore * 0.4 + 0.6;
+      } else if (details.fixedFileExists) {
+        // 修复文件存在但仍有问题
+        score = detectionScore * 0.4 + 0.3;
+      }
     }
 
     const passed = score >= 0.6;

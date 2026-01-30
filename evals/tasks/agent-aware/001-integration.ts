@@ -36,7 +36,7 @@ export const task: EvalTask = {
           },
           {
             file: 'src/main.tsx',
-            pattern: 'localhost:4100',
+            pattern: 'initAgentAware',
           },
         ],
       },
