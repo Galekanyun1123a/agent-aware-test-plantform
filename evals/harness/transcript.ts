@@ -46,10 +46,10 @@ export class TranscriptRecorder {
   }
 
   /**
-   * 记录工具调用
+   * 记录工具调用（包含输入和输出）
    */
-  recordToolCall(name: string, args: Record<string, unknown>): void {
-    this.record('tool_call', { name, args });
+  recordToolCall(name: string, input: Record<string, unknown>, output?: unknown): void {
+    this.record('tool_call', { name, input, output });
   }
 
   /**
@@ -57,6 +57,15 @@ export class TranscriptRecorder {
    */
   recordToolResult(name: string, result: unknown): void {
     this.record('tool_result', { name, result });
+  }
+
+  /**
+   * 记录工具调用列表
+   */
+  recordToolCalls(toolCalls: Array<{ toolName: string; input: Record<string, unknown>; output?: string }>): void {
+    for (const call of toolCalls) {
+      this.recordToolCall(call.toolName, call.input, call.output);
+    }
   }
 
   /**

@@ -10,7 +10,11 @@ import { claudeCodeProvider, getDefaultModel } from '@/lib/claude-code-provider'
 export const maxDuration = 300;
 
 // 获取工作目录路径（使用项目目录下的 workspace 文件夹）
-function getWorkspacePath(): string {
+function getWorkspacePath(customPath?: string): string {
+  // 优先使用请求中的自定义路径（用于评估系统隔离环境）
+  if (customPath) {
+    return customPath;
+  }
   if (process.env.WORKSPACE_PATH) {
     return process.env.WORKSPACE_PATH;
   }
@@ -18,8 +22,8 @@ function getWorkspacePath(): string {
 }
 
 // 生成系统提示
-function getSystemPrompt(): string {
-  const workspacePath = getWorkspacePath();
+function getSystemPrompt(customWorkspacePath?: string): string {
+  const workspacePath = getWorkspacePath(customWorkspacePath);
   return `你是一个web开发工程师，擅长前端开发。
 
 ## 工作环境
@@ -203,16 +207,18 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { messages, message, model } = body as {
+    const { messages, message, model, workspacePath } = body as {
       messages?: UIMessage[];
       message?: UIMessage;
       model?: string;
+      workspacePath?: string; // 自定义工作目录（用于评估系统隔离环境）
     };
 
     console.log('🔵 [AI Stream] 请求参数:', {
       requestId,
       model: model || getDefaultModel(),
       messageCount: messages?.length || (message ? 1 : 0),
+      workspacePath: workspacePath || '(默认)',
       rawBody: JSON.stringify(body, null, 2),
     });
 
@@ -248,7 +254,7 @@ export async function POST(req: Request) {
     // 处理流式请求
     const result = streamText({
       model: modelInstance,
-      system: getSystemPrompt(),
+      system: getSystemPrompt(workspacePath),
       messages: coreMessages,
     });
 

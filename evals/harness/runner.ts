@@ -13,6 +13,7 @@ import { gradeDetection } from '../graders/detection-grader';
 import { gradeErrorHandle } from '../graders/error-handle-grader';
 import { gradeCode } from '../graders/code-grader';
 import { gradeLLM } from '../graders/llm-grader';
+import { gradeRuntime } from '../graders/runtime-grader';
 import {
   createIsolatedEnvironment,
   listProjectFiles,
@@ -21,6 +22,7 @@ import {
 import { ProgressDisplay } from './progress';
 import { IncrementalReporter } from './reporter';
 import { TranscriptRecorder } from './transcript';
+import { runAgentTurn, type UIMessage, type AgentTurnResult } from './ai-client';
 import type {
   EvalResult,
   EvalTask,
@@ -28,7 +30,11 @@ import type {
   GraderResult,
   OutcomeState,
   TrialResult,
+  RuntimeGraderConfig,
 } from './types';
+
+// 是否启用真实 AI 调用（可通过环境变量控制）
+const ENABLE_REAL_AI = process.env.EVAL_REAL_AI !== 'false';
 
 /**
  * 执行单个评分器
@@ -71,6 +77,9 @@ async function runGrader(
         break;
       case 'llm':
         result = await gradeLLM(env.projectDir, graderConfig);
+        break;
+      case 'runtime':
+        result = await gradeRuntime(env.projectDir, graderConfig as RuntimeGraderConfig);
         break;
       default:
         throw new Error(`未知的评分器类型: ${(graderConfig as GraderConfig).type}`);
@@ -118,15 +127,44 @@ async function runTrial(
 
     recorder.recordStepFinish('setup', true);
 
-    // 2. 记录用户消息（模拟 AI 对话阶段）
+    // 2. 执行 AI 对话阶段
     progress.setPhase(task.id, 'ai');
     recorder.recordStepStart('ai');
 
-    for (const message of task.userMessages) {
-      recorder.recordUserMessage(message);
-      // 在实际实现中，这里会调用 AI 模型
-      // 目前只记录消息用于评分
-      recorder.recordAssistantMessage(`[模拟响应] 已处理: ${message.slice(0, 50)}...`);
+    // 设置工作目录环境变量，让 AI 知道在哪里工作
+    process.env.WORKSPACE_PATH = env.projectDir;
+
+    let messages: UIMessage[] = [];
+    let totalToolCalls = 0;
+
+    if (ENABLE_REAL_AI) {
+      // 真实 AI 调用模式
+      console.log(`🤖 [Runner] 启用真实 AI 调用，共 ${task.userMessages.length} 轮对话`);
+      console.log(`📁 [Runner] 工作目录: ${env.projectDir}`);
+
+      for (const message of task.userMessages) {
+        const result: AgentTurnResult = await runAgentTurn({
+          userMessage: message,
+          previousMessages: messages,
+          model: config.model,
+          recorder,
+          timeout: task.timeout ?? config.timeout,
+          workspacePath: env.projectDir,  // 传递隔离环境路径
+        });
+
+        messages = result.messages;
+        totalToolCalls += result.toolCalls.length;
+      }
+
+      console.log(`🔧 [Runner] 共执行 ${totalToolCalls} 个工具调用`);
+    } else {
+      // 模拟模式（用于测试评估框架本身）
+      console.log(`🔧 [Runner] 模拟模式，跳过 AI 调用`);
+
+      for (const message of task.userMessages) {
+        recorder.recordUserMessage(message);
+        recorder.recordAssistantMessage(`[模拟响应] 已处理: ${message.slice(0, 50)}...`);
+      }
     }
 
     recorder.recordStepFinish('ai', true);

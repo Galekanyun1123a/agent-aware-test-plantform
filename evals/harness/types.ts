@@ -43,7 +43,8 @@ export type GraderConfig =
   | DetectionGraderConfig
   | ErrorHandleGraderConfig
   | CodeGraderConfig
-  | LLMGraderConfig;
+  | LLMGraderConfig
+  | RuntimeGraderConfig;
 
 /**
  * 依赖检查评分器配置
@@ -183,6 +184,23 @@ export interface LLMGraderConfig {
   dimensions: string[];
   /** 通过阈值（0-1），默认 0.7 */
   threshold?: number;
+}
+
+/**
+ * 运行时评分器配置（浏览器自动化测试）
+ */
+export interface RuntimeGraderConfig {
+  type: 'runtime';
+  /** 开发服务器端口 */
+  port: number;
+  /** 页面加载超时（毫秒） */
+  timeout?: number;
+  /** 期望页面包含的文本 */
+  expectText?: string | string[];
+  /** 期望页面包含的元素选择器 */
+  expectSelector?: string | string[];
+  /** 启动命令 */
+  startCommand?: string;
 }
 
 // ==================== 评分结果 ====================

@@ -11,4 +11,5 @@ export * from './detection-grader';
 export * from './error-handle-grader';
 export * from './code-grader';
 export * from './llm-grader';
+export * from './runtime-grader';
 export * from './shared';
