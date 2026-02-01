@@ -18,6 +18,7 @@ export const task: EvalTask = {
   name: 'Agent-Aware 行为检测响应',
   description: 'AI 主动检测 .agent-aware/behavior.json 中的用户行为问题并提出修复方案',
   category: 'agent-aware-detection',
+  templateId: 'vite-react',
   // 模拟 agent-aware 检测到的用户挫折行为
   setupScript: `
     mkdir -p .agent-aware
@@ -26,11 +27,12 @@ export const task: EvalTask = {
   "timestamp": "${new Date().toISOString()}",
   "severity": "critical",
   "type": "frustration",
-  "summary": "检测到用户挫折行为",
+  "summary": "检测到用户挫折行为（挫折指数: 85）",
   "details": {
     "frustrationScore": 85,
     "rageClickCount": 7,
     "deadClickCount": 4,
+    "totalInteractions": 20,
     "recentActions": [
       {"type": "rage_click", "target": "button.submit", "count": 5, "timestamp": "${Date.now() - 5000}"},
       {"type": "dead_click", "target": "div.disabled-area", "count": 3, "timestamp": "${Date.now() - 3000}"},
@@ -66,8 +68,8 @@ EOF
     },
     {
       type: 'llm',
-      rubric: 'agent-aware-integration.md',
-      dimensions: ['问题识别', '原因分析', '修复方案'],
+      rubric: 'behavior-detection.md',
+      dimensions: ['问题识别能力', '原因分析能力', '修复方案质量', '主动响应程度'],
       threshold: 0.6,
     },
   ],

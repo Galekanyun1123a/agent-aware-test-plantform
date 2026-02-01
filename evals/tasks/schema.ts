@@ -187,6 +187,18 @@ export const graderConfigSchema = z.union([
 ]);
 
 /**
+ * 项目模板类型 Schema
+ */
+export const templateTypeSchema = z.enum([
+  'vite-react',
+  'simple-html',
+  'nextjs',
+  'node-server',
+  'minimal',
+  'custom',
+]);
+
+/**
  * 评估任务 Schema
  */
 export const evalTaskSchema = z.object({
@@ -198,6 +210,8 @@ export const evalTaskSchema = z.object({
   name: z.string().min(1, { message: '任务名称不能为空' }),
   /** 任务描述 */
   description: z.string().min(1, { message: '任务描述不能为空' }),
+  /** 项目模板 ID（默认 vite-react） */
+  templateId: templateTypeSchema.optional().default('vite-react'),
   /** 用户消息列表 */
   userMessages: z.array(z.string()).min(1, { message: '至少需要一条用户消息' }),
   /** 评分器配置列表 */

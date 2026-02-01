@@ -29,8 +29,14 @@ export interface IsolatedEnvironment {
 
 /**
  * 项目模板类型
+ * - vite-react: Vite + React + TypeScript（默认）
+ * - simple-html: 简单 HTML 项目
+ * - nextjs: Next.js 项目
+ * - node-server: Node.js 服务器项目
+ * - minimal: 最小模板（仅目录结构）
+ * - custom: 复制 workspace 目录
  */
-export type TemplateType = 'vite-react' | 'minimal' | 'custom';
+export type TemplateType = 'vite-react' | 'simple-html' | 'nextjs' | 'node-server' | 'minimal' | 'custom';
 
 /**
  * 创建隔离的评估环境
@@ -48,25 +54,39 @@ export async function createIsolatedEnvironment(
   const timestamp = Date.now();
   const envDir = path.join(config.tempDirPrefix, `${taskId}-${timestamp}`);
 
-  console.log(`📁 [Environment] 创建隔离环境: ${envDir}`);
+  console.log(`📁 [Environment] 创建隔离环境: ${envDir} (模板: ${templateType})`);
 
   // 创建临时目录
   fs.mkdirSync(envDir, { recursive: true });
 
   // 根据模板类型初始化项目
-  if (templateType === 'vite-react') {
-    await initViteReactTemplate(envDir);
-  } else if (templateType === 'minimal') {
-    initMinimalTemplate(envDir);
-  } else {
-    // custom: 复制 workspace 模板到临时目录
-    const workspaceSource = path.join(process.cwd(), 'workspace');
-    if (fs.existsSync(workspaceSource)) {
-      copyDirSync(workspaceSource, envDir);
-    } else {
-      // 如果 workspace 不存在，使用最小模板
+  switch (templateType) {
+    case 'vite-react':
+      await initViteReactTemplate(envDir);
+      break;
+    case 'simple-html':
+      initSimpleHtmlTemplate(envDir);
+      break;
+    case 'nextjs':
+      await initNextJsTemplate(envDir);
+      break;
+    case 'node-server':
+      await initNodeServerTemplate(envDir);
+      break;
+    case 'minimal':
       initMinimalTemplate(envDir);
-    }
+      break;
+    case 'custom':
+    default:
+      // custom: 复制 workspace 模板到临时目录
+      const workspaceSource = path.join(process.cwd(), 'workspace');
+      if (fs.existsSync(workspaceSource)) {
+        copyDirSync(workspaceSource, envDir);
+      } else {
+        // 如果 workspace 不存在，使用最小模板
+        initMinimalTemplate(envDir);
+      }
+      break;
   }
 
   // 创建 .agent-aware 检测目录
@@ -325,6 +345,307 @@ export default App
   }
 
   console.log(`✅ [Template] Vite + React 模板初始化完成`);
+}
+
+/**
+ * 初始化简单 HTML 模板
+ */
+function initSimpleHtmlTemplate(envDir: string): void {
+  console.log(`📦 [Template] 初始化简单 HTML 模板...`);
+
+  // index.html
+  const indexHtml = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Preview</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; min-height: 100vh; }
+  </style>
+</head>
+<body>
+  <h1>Hello World</h1>
+</body>
+</html>
+`;
+  fs.writeFileSync(path.join(envDir, 'index.html'), indexHtml);
+
+  console.log(`✅ [Template] 简单 HTML 模板初始化完成`);
+}
+
+/**
+ * 初始化 Next.js 模板
+ */
+async function initNextJsTemplate(envDir: string): Promise<void> {
+  console.log(`📦 [Template] 初始化 Next.js 模板...`);
+
+  // 创建目录结构
+  fs.mkdirSync(path.join(envDir, 'app'), { recursive: true });
+
+  // package.json
+  const packageJson = {
+    name: 'eval-nextjs-workspace',
+    private: true,
+    version: '0.0.0',
+    scripts: {
+      dev: 'next dev',
+      build: 'next build',
+      start: 'next start',
+    },
+    dependencies: {
+      '@reskill/agent-aware': 'latest',
+      next: '^14.0.0',
+      react: '^18.2.0',
+      'react-dom': '^18.2.0',
+    },
+    devDependencies: {
+      '@types/node': '^20.0.0',
+      '@types/react': '^18.2.0',
+      typescript: '^5.0.0',
+      tailwindcss: '^3.4.0',
+      autoprefixer: '^10.4.0',
+      postcss: '^8.4.0',
+    },
+  };
+  fs.writeFileSync(
+    path.join(envDir, 'package.json'),
+    JSON.stringify(packageJson, null, 2)
+  );
+
+  // tsconfig.json
+  const tsConfig = {
+    compilerOptions: {
+      target: 'es5',
+      lib: ['dom', 'dom.iterable', 'esnext'],
+      allowJs: true,
+      skipLibCheck: true,
+      strict: true,
+      forceConsistentCasingInFileNames: true,
+      noEmit: true,
+      esModuleInterop: true,
+      module: 'esnext',
+      moduleResolution: 'bundler',
+      resolveJsonModule: true,
+      isolatedModules: true,
+      jsx: 'preserve',
+      incremental: true,
+      plugins: [{ name: 'next' }],
+      paths: { '@/*': ['./*'] },
+    },
+    include: ['next-env.d.ts', '**/*.ts', '**/*.tsx', '.next/types/**/*.ts'],
+    exclude: ['node_modules'],
+  };
+  fs.writeFileSync(
+    path.join(envDir, 'tsconfig.json'),
+    JSON.stringify(tsConfig, null, 2)
+  );
+
+  // next.config.js
+  const nextConfig = `/** @type {import('next').NextConfig} */
+const nextConfig = {}
+module.exports = nextConfig
+`;
+  fs.writeFileSync(path.join(envDir, 'next.config.js'), nextConfig);
+
+  // app/layout.tsx
+  const layoutTsx = `import type { Metadata } from 'next'
+import { initAgentAware } from '@reskill/agent-aware'
+import './globals.css'
+
+// 初始化 Agent-Aware
+if (typeof window !== 'undefined') {
+  initAgentAware()
+}
+
+export const metadata: Metadata = {
+  title: 'Next.js App',
+  description: 'Generated by AI',
+}
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="zh-CN">
+      <body>{children}</body>
+    </html>
+  )
+}
+`;
+  fs.writeFileSync(path.join(envDir, 'app/layout.tsx'), layoutTsx);
+
+  // app/page.tsx
+  const pageTsx = `export default function Home() {
+  return (
+    <main className="min-h-screen flex items-center justify-center">
+      <h1 className="text-4xl font-bold">欢迎使用 Next.js</h1>
+    </main>
+  )
+}
+`;
+  fs.writeFileSync(path.join(envDir, 'app/page.tsx'), pageTsx);
+
+  // app/globals.css
+  const globalsCss = `@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+`;
+  fs.writeFileSync(path.join(envDir, 'app/globals.css'), globalsCss);
+
+  // tailwind.config.js
+  const tailwindConfig = `/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: ['./app/**/*.{js,ts,jsx,tsx}'],
+  theme: { extend: {} },
+  plugins: [],
+}
+`;
+  fs.writeFileSync(path.join(envDir, 'tailwind.config.js'), tailwindConfig);
+
+  // postcss.config.js
+  const postcssConfig = `module.exports = {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+}
+`;
+  fs.writeFileSync(path.join(envDir, 'postcss.config.js'), postcssConfig);
+
+  // 安装依赖
+  console.log(`📦 [Template] 安装依赖...`);
+  try {
+    execSync('pnpm install', {
+      cwd: envDir,
+      stdio: 'pipe',
+      timeout: 120000,
+      shell: true,
+    });
+    console.log(`✅ [Template] 依赖安装完成`);
+  } catch (error) {
+    console.warn(`⚠️ [Template] 依赖安装失败: ${error}`);
+  }
+
+  console.log(`✅ [Template] Next.js 模板初始化完成`);
+}
+
+/**
+ * 初始化 Node.js 服务器模板
+ */
+async function initNodeServerTemplate(envDir: string): Promise<void> {
+  console.log(`📦 [Template] 初始化 Node.js 服务器模板...`);
+
+  // 创建目录结构
+  fs.mkdirSync(path.join(envDir, 'src'), { recursive: true });
+
+  // package.json
+  const packageJson = {
+    name: 'eval-node-server',
+    private: true,
+    version: '0.0.0',
+    type: 'module',
+    scripts: {
+      start: 'node --experimental-specifier-resolution=node src/server.js',
+      dev: 'node --watch src/server.js',
+    },
+    dependencies: {
+      '@reskill/agent-aware-server': 'latest',
+    },
+    devDependencies: {
+      '@types/node': '^20.0.0',
+      typescript: '^5.0.0',
+    },
+  };
+  fs.writeFileSync(
+    path.join(envDir, 'package.json'),
+    JSON.stringify(packageJson, null, 2)
+  );
+
+  // src/server.js - 包含基本的 /behaviors 端点框架
+  const serverJs = `import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
+
+const PORT = process.env.PORT || 4100;
+const DATA_DIR = path.join(process.cwd(), 'data');
+
+// 确保数据目录存在
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+const server = http.createServer((req, res) => {
+  // 设置 CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(200);
+    res.end();
+    return;
+  }
+
+  // POST /behaviors - 接收用户行为数据
+  if (req.url === '/behaviors' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => { body += chunk.toString(); });
+    req.on('end', () => {
+      try {
+        const data = JSON.parse(body);
+        // TODO: 添加数据验证和存储逻辑
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, message: '数据接收成功' }));
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid JSON' }));
+      }
+    });
+    return;
+  }
+
+  // 健康检查
+  if (req.url === '/health' && req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ status: 'ok' }));
+    return;
+  }
+
+  // 404
+  res.writeHead(404, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ error: 'Not found' }));
+});
+
+server.listen(PORT, () => {
+  console.log(\`Server running on port \${PORT}\`);
+});
+`;
+  fs.writeFileSync(path.join(envDir, 'src/server.js'), serverJs);
+
+  // 创建数据目录
+  fs.mkdirSync(path.join(envDir, 'data'), { recursive: true });
+
+  // 安装依赖
+  console.log(`📦 [Template] 安装依赖...`);
+  try {
+    execSync('pnpm install', {
+      cwd: envDir,
+      stdio: 'pipe',
+      timeout: 60000,
+      shell: true,
+    });
+    console.log(`✅ [Template] 依赖安装完成`);
+  } catch (error) {
+    console.warn(`⚠️ [Template] 依赖安装失败: ${error}`);
+  }
+
+  console.log(`✅ [Template] Node.js 服务器模板初始化完成`);
 }
 
 /**

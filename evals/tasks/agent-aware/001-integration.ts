@@ -17,6 +17,7 @@ export const task: EvalTask = {
   name: 'Agent-Aware 集成',
   description: '在 Vite + React + TypeScript 项目中正确集成 @reskill/agent-aware 库，确保在 React 渲染之前初始化用户行为追踪',
   category: 'integration',
+  templateId: 'vite-react',
   userMessages: [
     '请确保项目已正确集成 @reskill/agent-aware 库。要求：1) 在 package.json 中添加 @reskill/agent-aware 依赖 2) 在 src/main.tsx 中导入 initAgentAware 3) 在 React 渲染之前调用 initAgentAware() 进行初始化',
   ],

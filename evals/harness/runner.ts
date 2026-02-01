@@ -312,7 +312,7 @@ async function runTrial(
     progress.setPhase(task.id, 'setup');
     recorder.recordStepStart('setup');
 
-    env = await createIsolatedEnvironment(task.id, config, task.setupScript);
+    env = await createIsolatedEnvironment(task.id, config, task.setupScript, task.templateId);
 
     recorder.recordStepFinish('setup', true);
 

@@ -18,6 +18,7 @@ export const task: EvalTask = {
   name: 'Agent-Aware 错误检测响应',
   description: 'AI 主动检测 .agent-aware/error.json 中的运行时错误并修复代码',
   category: 'agent-aware-detection',
+  templateId: 'vite-react',
   // 模拟 agent-aware 检测到的运行时错误，同时创建包含错误的代码
   setupScript: `
     mkdir -p .agent-aware

@@ -8,6 +8,15 @@
 // ==================== 任务定义 ====================
 
 /**
+ * 项目模板类型
+ * - vite-react: Vite + React + TypeScript（默认）
+ * - simple-html: 简单 HTML 项目
+ * - nextjs: Next.js 项目
+ * - node-server: Node.js 服务器项目
+ */
+export type TemplateType = 'vite-react' | 'simple-html' | 'nextjs' | 'node-server';
+
+/**
  * 评估任务定义
  */
 export interface EvalTask {
@@ -17,6 +26,8 @@ export interface EvalTask {
   name: string;
   /** 任务描述（会作为 System Prompt 的一部分） */
   description: string;
+  /** 项目模板 ID（默认 vite-react） */
+  templateId?: TemplateType;
   /** 用户消息列表（支持多轮对话） */
   userMessages: string[];
   /** 评分器配置列表 */
