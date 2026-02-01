@@ -118,6 +118,57 @@ export const llmGraderConfigSchema = z.object({
 });
 
 /**
+ * Runtime 评分器配置 Schema
+ */
+export const runtimeGraderConfigSchema = z.object({
+  type: z.literal('runtime'),
+  port: z.number(),
+  timeout: z.number().optional(),
+  expectText: z.union([z.string(), z.array(z.string())]).optional(),
+  expectSelector: z.union([z.string(), z.array(z.string())]).optional(),
+  startCommand: z.string().optional(),
+  userActions: z.array(z.object({
+    type: z.enum(['click', 'type', 'wait', 'scroll']),
+    selector: z.string().optional(),
+    value: z.string().optional(),
+    timeout: z.number().optional(),
+  })).optional(),
+  waitForAgentAware: z.boolean().optional(),
+});
+
+/**
+ * Behavior 评分器配置 Schema
+ * 对应 getSystemPrompt 中描述的 BehaviorDetector
+ */
+export const behaviorGraderConfigSchema = z.object({
+  type: z.literal('behavior'),
+  checks: z.object({
+    frustration: z.boolean().optional(),
+    rageClick: z.boolean().optional(),
+    deadClick: z.boolean().optional(),
+    aiResponse: z.boolean().optional(),
+  }),
+  expectedSeverity: z.enum(['critical', 'warning', 'info']).optional(),
+  behaviorFilePath: z.string().optional(),
+});
+
+/**
+ * Alert 评分器配置 Schema
+ * 对应 getSystemPrompt 中描述的 AlertDetector
+ */
+export const alertGraderConfigSchema = z.object({
+  type: z.literal('alert'),
+  checks: z.object({
+    fileExists: z.boolean().optional(),
+    minErrorCount: z.number().optional(),
+    errorTypes: z.array(z.enum(['runtime', 'promise', 'console'])).optional(),
+    aiResponse: z.boolean().optional(),
+    errorMessageContains: z.array(z.string()).optional(),
+  }),
+  errorFilePath: z.string().optional(),
+});
+
+/**
  * 评分器配置 Schema（联合类型）
  */
 export const graderConfigSchema = z.union([
@@ -130,6 +181,9 @@ export const graderConfigSchema = z.union([
   errorHandleGraderConfigSchema,
   codeGraderConfigSchema,
   llmGraderConfigSchema,
+  runtimeGraderConfigSchema,
+  behaviorGraderConfigSchema,
+  alertGraderConfigSchema,
 ]);
 
 /**

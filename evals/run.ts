@@ -2,9 +2,13 @@
 /**
  * 评估运行入口
  * CLI 工具，用于运行评估任务
+ * 
+ * 支持两种执行模式：
+ * - 串行执行（默认）：适用于资源有限或需要避免端口冲突的场景
+ * - 并行执行（--parallel）：适用于快速完成大量评估任务
  */
 
-import { runEval, runSingleTask } from './harness/runner';
+import { runEval, runEvalParallel, runSingleTask } from './harness/runner';
 import { getConfig, parseTaskFilter, printHelp } from './config';
 import {
   allTasks,
@@ -54,11 +58,13 @@ async function main() {
   const config = getConfig(args);
   const filter = parseTaskFilter(args);
 
+  const executionMode = config.parallel.enabled ? '并行' : '串行';
   console.log('╔══════════════════════════════════════════════════════════════════╗');
   console.log('║           Agent-Aware 评估系统                                    ║');
   console.log('╠══════════════════════════════════════════════════════════════════╣');
   console.log(`║  模型: ${config.model.padEnd(56)} ║`);
   console.log(`║  超时: ${(config.timeout / 1000).toFixed(0)}s${' '.repeat(54)} ║`);
+  console.log(`║  模式: ${executionMode}${config.parallel.enabled ? ` (并发数: ${config.parallel.maxConcurrency})` : ''}${' '.repeat(config.parallel.enabled ? 43 : 54)} ║`);
   console.log('╚══════════════════════════════════════════════════════════════════╝');
   console.log('');
 
@@ -100,7 +106,10 @@ async function main() {
 
   // 运行评估
   try {
-    const { results, reporter } = await runEval(tasksToRun, config, config.resultsDir);
+    // 根据配置选择执行模式
+    const { results, reporter } = config.parallel.enabled
+      ? await runEvalParallel(tasksToRun, config, config.resultsDir, config.parallel)
+      : await runEval(tasksToRun, config, config.resultsDir);
 
     // 输出最终报告
     const report = reporter.getFinalReport();
@@ -113,6 +122,7 @@ async function main() {
     console.log(`║  通过任务: ${report.summary.passedTasks.toString().padEnd(52)} ║`);
     console.log(`║  通过率:   ${report.summary.passRate.padEnd(52)} ║`);
     console.log('╠══════════════════════════════════════════════════════════════════╣');
+    console.log(`║  执行模式: ${(config.parallel.enabled ? '并行' : '串行').padEnd(52)} ║`);
     console.log(`║  报告路径: ${reporter.getReportPath().slice(-50).padEnd(52)} ║`);
     console.log('╚══════════════════════════════════════════════════════════════════╝');
 

@@ -7,6 +7,12 @@
  * 3. 检查页面加载状态
  * 4. 收集控制台错误
  * 5. 验证预期内容
+ * 6. 模拟用户行为（点击、输入等）
+ * 7. 等待 agent-aware 检测文件生成
+ *
+ * 增强功能（对应 getSystemPrompt）：
+ * - 支持用户行为模拟触发 agent-aware 检测
+ * - 支持等待 .agent-aware/ 目录下的检测文件
  */
 
 import { chromium, type Browser, type Page, type ConsoleMessage } from 'playwright';
@@ -28,6 +34,20 @@ export interface RuntimeGraderConfig {
   expectSelector?: string | string[];
   /** 启动命令 */
   startCommand?: string;
+  /** 用户行为模拟操作 */
+  userActions?: Array<{
+    type: 'click' | 'type' | 'wait' | 'scroll' | 'rage_click' | 'dead_click';
+    selector?: string;
+    value?: string;
+    timeout?: number;
+    count?: number; // 用于 rage_click/dead_click 次数
+  }>;
+  /** 是否等待 agent-aware 检测文件 */
+  waitForAgentAware?: boolean;
+  /** 等待的检测文件类型 */
+  waitForAgentAwareFile?: 'behavior.json' | 'error.json' | 'both';
+  /** 等待检测文件的超时时间 */
+  agentAwareTimeout?: number;
 }
 
 // 页面检查结果
@@ -248,14 +268,16 @@ async function checkPage(
 
 /**
  * 模拟用户交互
+ * 增强版：支持 rage_click（愤怒点击）和 dead_click（死点击）模拟
  */
 export async function simulateUserInteraction(
   port: number,
   actions: Array<{
-    type: 'click' | 'type' | 'wait';
+    type: 'click' | 'type' | 'wait' | 'scroll' | 'rage_click' | 'dead_click';
     selector?: string;
     value?: string;
     timeout?: number;
+    count?: number;
   }>,
   timeout: number = 30000
 ): Promise<{
@@ -298,6 +320,46 @@ export async function simulateUserInteraction(
           case 'wait':
             await page.waitForTimeout(action.timeout || 1000);
             break;
+
+          case 'scroll':
+            if (action.selector) {
+              await page.locator(action.selector).scrollIntoViewIfNeeded();
+            } else {
+              await page.evaluate(() => window.scrollBy(0, 300));
+            }
+            console.log(`📜 [Runtime] 滚动`);
+            break;
+
+          case 'rage_click':
+            // 模拟愤怒点击：快速连续点击
+            {
+              const clickCount = action.count || 5;
+              const selector = action.selector || 'body';
+              console.log(`😤 [Runtime] 模拟愤怒点击: ${selector} x${clickCount}`);
+              for (let i = 0; i < clickCount; i++) {
+                await page.click(selector, { delay: 50 });
+              }
+            }
+            break;
+
+          case 'dead_click':
+            // 模拟死点击：点击无响应元素
+            {
+              const clickCount = action.count || 3;
+              // 尝试点击一个不存在的元素或静态元素
+              const selector = action.selector || 'div.static-element, span:not([onclick])';
+              console.log(`💀 [Runtime] 模拟死点击: ${selector} x${clickCount}`);
+              try {
+                for (let i = 0; i < clickCount; i++) {
+                  // 点击页面上的静态位置
+                  await page.mouse.click(100 + i * 10, 100 + i * 10);
+                  await page.waitForTimeout(100);
+                }
+              } catch {
+                // 忽略点击错误
+              }
+            }
+            break;
         }
       } catch (error) {
         errors.push(`操作失败 (${action.type}): ${error}`);
@@ -320,7 +382,44 @@ export async function simulateUserInteraction(
 }
 
 /**
+ * 等待 agent-aware 检测文件生成
+ */
+async function waitForAgentAwareFile(
+  projectDir: string,
+  fileType: 'behavior.json' | 'error.json' | 'both',
+  timeout: number = 10000
+): Promise<{ found: boolean; files: string[] }> {
+  const startTime = Date.now();
+  const agentAwareDir = path.join(projectDir, '.agent-aware');
+  const foundFiles: string[] = [];
+
+  const filesToCheck = fileType === 'both'
+    ? ['behavior.json', 'error.json']
+    : [fileType];
+
+  while (Date.now() - startTime < timeout) {
+    for (const file of filesToCheck) {
+      const filePath = path.join(agentAwareDir, file);
+      if (fs.existsSync(filePath) && !foundFiles.includes(file)) {
+        foundFiles.push(file);
+        console.log(`✅ [AgentAware] 检测到文件: ${file}`);
+      }
+    }
+
+    // 如果所有文件都找到了，返回
+    if (foundFiles.length === filesToCheck.length) {
+      return { found: true, files: foundFiles };
+    }
+
+    await new Promise((r) => setTimeout(r, 500));
+  }
+
+  return { found: foundFiles.length > 0, files: foundFiles };
+}
+
+/**
  * 执行运行时评分
+ * 增强版：支持用户行为模拟和 agent-aware 检测文件等待
  */
 export async function gradeRuntime(
   projectDir: string,
@@ -330,9 +429,21 @@ export async function gradeRuntime(
     pageLoaded: false,
     consoleErrors: [],
     hasErrors: false,
+    userActionsExecuted: false,
+    agentAwareFiles: [],
   };
 
-  const { port, timeout = 30000, expectText, expectSelector, startCommand } = config;
+  const {
+    port,
+    timeout = 30000,
+    expectText,
+    expectSelector,
+    startCommand,
+    userActions,
+    waitForAgentAware,
+    waitForAgentAwareFile = 'behavior.json',
+    agentAwareTimeout = 10000,
+  } = config;
 
   let server: ChildProcess | undefined;
 
@@ -378,7 +489,31 @@ export async function gradeRuntime(
     details.textFound = checkResult.textFound;
     details.selectorFound = checkResult.selectorFound;
 
-    // 6. 计算分数
+    // 6. 执行用户行为模拟（如果配置了）
+    if (userActions && userActions.length > 0) {
+      console.log(`🎭 [Runtime] 执行用户行为模拟...`);
+      const interactionResult = await simulateUserInteraction(port, userActions, timeout);
+      details.userActionsExecuted = true;
+      details.userActionsSuccess = interactionResult.success;
+      details.userActionsErrors = interactionResult.errors;
+
+      // 等待一小段时间让 agent-aware 处理行为数据
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+
+    // 7. 等待 agent-aware 检测文件（如果配置了）
+    if (waitForAgentAware) {
+      console.log(`🔍 [Runtime] 等待 agent-aware 检测文件...`);
+      const agentAwareResult = await waitForAgentAwareFile(
+        projectDir,
+        waitForAgentAwareFile,
+        agentAwareTimeout
+      );
+      details.agentAwareFound = agentAwareResult.found;
+      details.agentAwareFiles = agentAwareResult.files;
+    }
+
+    // 8. 计算分数
     const hasErrors = checkResult.consoleErrors.length > 0;
     details.hasErrors = hasErrors;
 
@@ -392,6 +527,16 @@ export async function gradeRuntime(
       }
       if (expectSelector && !checkResult.selectorFound) {
         score *= 0.8;
+      }
+
+      // 用户行为模拟成功加分
+      if (userActions && details.userActionsSuccess) {
+        score = Math.min(1, score * 1.1);
+      }
+
+      // 检测到 agent-aware 文件加分
+      if (waitForAgentAware && details.agentAwareFound) {
+        score = Math.min(1, score * 1.1);
       }
     }
 

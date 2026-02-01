@@ -3,6 +3,11 @@
  *
  * 难度: 简单
  * 评估: @reskill/agent-aware 库的正确集成
+ *
+ * 对应 getSystemPrompt 中描述的必须集成要求：
+ * 1. 安装 @reskill/agent-aware 依赖
+ * 2. 在 src/main.tsx 中初始化 initAgentAware()
+ * 3. 在 React 渲染之前初始化
  */
 
 import type { EvalTask } from '../../harness/types';
@@ -10,10 +15,10 @@ import type { EvalTask } from '../../harness/types';
 export const task: EvalTask = {
   id: '001-integration',
   name: 'Agent-Aware 集成',
-  description: '在项目中正确集成 @reskill/agent-aware 库，确保依赖安装和初始化配置正确',
+  description: '在 Vite + React + TypeScript 项目中正确集成 @reskill/agent-aware 库，确保在 React 渲染之前初始化用户行为追踪',
   category: 'integration',
   userMessages: [
-    '请在项目中集成 @reskill/agent-aware 库。要求：1) 在 package.json 中添加依赖 2) 在 src/main.tsx 中导入并调用 initAgentAware() 3)',
+    '请确保项目已正确集成 @reskill/agent-aware 库。要求：1) 在 package.json 中添加 @reskill/agent-aware 依赖 2) 在 src/main.tsx 中导入 initAgentAware 3) 在 React 渲染之前调用 initAgentAware() 进行初始化',
   ],
   graders: [
     {
@@ -28,7 +33,7 @@ export const task: EvalTask = {
     {
       type: 'code',
       checks: {
-        fileExists: ['src/main.tsx', 'package.json'],
+        fileExists: ['src/main.tsx', 'package.json', 'src/App.tsx'],
         fileContains: [
           {
             file: 'package.json',
@@ -38,13 +43,18 @@ export const task: EvalTask = {
             file: 'src/main.tsx',
             pattern: 'initAgentAware',
           },
+          {
+            file: 'src/main.tsx',
+            // 确保在 createRoot 之前调用
+            pattern: 'initAgentAware\\(\\)[\\s\\S]*createRoot',
+          },
         ],
       },
     },
     {
       type: 'llm',
       rubric: 'agent-aware-integration.md',
-      dimensions: ['依赖管理', '初始化配置', '代码质量'],
+      dimensions: ['依赖管理', '初始化配置', '代码质量', '初始化顺序'],
       threshold: 0.7,
     },
   ],

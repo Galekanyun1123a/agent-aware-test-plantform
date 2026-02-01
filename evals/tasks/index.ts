@@ -13,6 +13,9 @@ import { task as task005 } from './agent-aware/005-context-reuse';
 import { task as task006 } from './agent-aware/006-ai-detection';
 import { task as task007 } from './agent-aware/007-error-handling';
 import { task as task008 } from './agent-aware/008-runtime-test';
+import { task as task009 } from './agent-aware/009-behavior-detection';
+import { task as task010 } from './agent-aware/010-error-detection';
+import { task as task011 } from './agent-aware/011-full-integration';
 
 /**
  * 所有评估任务
@@ -26,6 +29,9 @@ export const allTasks: EvalTask[] = [
   task006,
   task007,
   task008,
+  task009,
+  task010,
+  task011,
 ];
 
 /**

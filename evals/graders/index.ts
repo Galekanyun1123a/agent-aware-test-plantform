@@ -12,4 +12,6 @@ export * from './error-handle-grader';
 export * from './code-grader';
 export * from './llm-grader';
 export * from './runtime-grader';
+export * from './behavior-grader';
+export * from './alert-grader';
 export * from './shared';

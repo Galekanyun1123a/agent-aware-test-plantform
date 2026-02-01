@@ -44,7 +44,9 @@ export type GraderConfig =
   | ErrorHandleGraderConfig
   | CodeGraderConfig
   | LLMGraderConfig
-  | RuntimeGraderConfig;
+  | RuntimeGraderConfig
+  | BehaviorGraderConfig
+  | AlertGraderConfig;
 
 /**
  * 依赖检查评分器配置
@@ -201,6 +203,61 @@ export interface RuntimeGraderConfig {
   expectSelector?: string | string[];
   /** 启动命令 */
   startCommand?: string;
+  /** 用户行为模拟操作 */
+  userActions?: Array<{
+    type: 'click' | 'type' | 'wait' | 'scroll';
+    selector?: string;
+    value?: string;
+    timeout?: number;
+  }>;
+  /** 是否等待 agent-aware 检测文件 */
+  waitForAgentAware?: boolean;
+}
+
+/**
+ * 用户行为检测评分器配置
+ * 对应 getSystemPrompt 中描述的 BehaviorDetector
+ */
+export interface BehaviorGraderConfig {
+  type: 'behavior';
+  /** 检查配置 */
+  checks: {
+    /** 是否检查挫折检测 */
+    frustration?: boolean;
+    /** 是否检查愤怒点击检测 */
+    rageClick?: boolean;
+    /** 是否检查死点击检测 */
+    deadClick?: boolean;
+    /** 是否检查 AI 修复响应 */
+    aiResponse?: boolean;
+  };
+  /** 预期严重程度 */
+  expectedSeverity?: 'critical' | 'warning' | 'info';
+  /** 行为文件路径 */
+  behaviorFilePath?: string;
+}
+
+/**
+ * 错误检测评分器配置
+ * 对应 getSystemPrompt 中描述的 AlertDetector
+ */
+export interface AlertGraderConfig {
+  type: 'alert';
+  /** 检查配置 */
+  checks: {
+    /** 是否检查错误文件存在 */
+    fileExists?: boolean;
+    /** 期望的错误数量（最少） */
+    minErrorCount?: number;
+    /** 期望的错误类型 */
+    errorTypes?: Array<'runtime' | 'promise' | 'console'>;
+    /** 是否检查 AI 修复响应 */
+    aiResponse?: boolean;
+    /** 期望包含的错误消息关键词 */
+    errorMessageContains?: string[];
+  };
+  /** 错误文件路径 */
+  errorFilePath?: string;
 }
 
 // ==================== 评分结果 ====================
