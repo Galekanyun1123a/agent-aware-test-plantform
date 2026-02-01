@@ -21,10 +21,6 @@ on:
       - 'package.json'
       - 'pnpm-lock.yaml'
 
-  # 定时触发（每天凌晨 3 点 UTC）
-  schedule:
-    - cron: '0 3 * * *'
-
   # 手动触发，支持选择任务
   workflow_dispatch:
     inputs:
@@ -62,16 +58,15 @@ jobs:
   evals-parallel:
     name: Eval Task ${{ matrix.task }}
     runs-on: ubuntu-latest
-    # 自动触发条件：PR、push、schedule，或手动选择 parallel 模式
+    # 自动触发条件：PR、push，或手动选择 parallel 模式
     if: |
       github.event_name == 'pull_request' ||
       github.event_name == 'push' ||
-      github.event_name == 'schedule' ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.eval_mode == 'parallel')
     strategy:
       fail-fast: false  # 一个失败不影响其他
       matrix:
-        task: ['001', '002', '003', '004', '005', '006', '007']
+        task: ['001', '002', '003', '004', '005', '006', '007', '008', '009', '010', '011']
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -234,7 +229,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| 任务 | 状态 |" >> $GITHUB_STEP_SUMMARY
           echo "|------|------|" >> $GITHUB_STEP_SUMMARY
-          for task in 001 002 003 004 005 006 007; do
+          for task in 001 002 003 004 005 006 007 008 009 010 011; do
             if [ -d "all-results/" ]; then
               echo "| $task | ✅ 已执行 |" >> $GITHUB_STEP_SUMMARY
             else
