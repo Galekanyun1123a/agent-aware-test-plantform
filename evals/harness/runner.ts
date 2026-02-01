@@ -225,10 +225,31 @@ interface TaskContext {
 }
 
 /**
+ * 替换字符串中的端口占位符
+ * 支持的占位符:
+ * - {{SERVER_PORT}} - Agent-Aware 服务器端口
+ * - {{DEV_PORT}} - Vite 开发服务器端口
+ * - 4100 (直接替换) - 兼容旧任务中硬编码的 4100 端口
+ */
+function replacePortPlaceholders(str: string, context: TaskContext): string {
+  return str
+    .replace(/\{\{SERVER_PORT\}\}/g, String(context.serverPort))
+    .replace(/\{\{DEV_PORT\}\}/g, String(context.devPort))
+    // 兼容旧任务：将硬编码的 4100 替换为动态端口
+    .replace(/\b4100\b/g, String(context.serverPort));
+}
+
+/**
  * 重写任务中的端口配置
  * 用于并行执行时为每个任务分配独立端口
+ * 
+ * 会替换以下内容中的端口:
+ * 1. graders 配置中的 port 字段
+ * 2. setupScript 中的端口占位符和硬编码端口
+ * 3. userMessages 中的端口占位符和硬编码端口
  */
 function rewriteTaskPorts(task: EvalTask, context: TaskContext): EvalTask {
+  // 1. 重写 graders 中的端口
   const rewrittenGraders = task.graders.map((grader) => {
     if (grader.type === 'server') {
       return { ...grader, port: context.serverPort };
@@ -245,7 +266,22 @@ function rewriteTaskPorts(task: EvalTask, context: TaskContext): EvalTask {
     return grader;
   });
 
-  return { ...task, graders: rewrittenGraders };
+  // 2. 重写 setupScript 中的端口
+  const rewrittenSetupScript = task.setupScript
+    ? replacePortPlaceholders(task.setupScript, context)
+    : undefined;
+
+  // 3. 重写 userMessages 中的端口
+  const rewrittenUserMessages = task.userMessages.map((msg) =>
+    replacePortPlaceholders(msg, context)
+  );
+
+  return {
+    ...task,
+    graders: rewrittenGraders,
+    setupScript: rewrittenSetupScript,
+    userMessages: rewrittenUserMessages,
+  };
 }
 
 /**
@@ -396,22 +432,48 @@ async function runTrial(
   }
 }
 
+// 串行模式的端口分配器（确保串行模式也使用动态端口）
+const serialPortAllocator = new PortAllocator(5200, 100);
+
 /**
- * 执行单个任务
+ * 执行单个任务（串行模式）
+ * 也会为任务分配动态端口，避免硬编码端口冲突
  */
 async function runTask(
   task: EvalTask,
   config: EvalConfig,
-  progress: ProgressDisplay
+  progress: ProgressDisplay,
+  taskIndex: number = 0,
+  totalTasks: number = 1
 ): Promise<EvalResult> {
-  const trial = await runTrial(task, 0, config, progress);
-
-  return {
-    taskId: task.id,
-    passed: trial.passed,
-    trial,
-    duration: trial.duration,
+  // 为串行任务分配端口
+  const ports = serialPortAllocator.allocate(task.id);
+  
+  const context: TaskContext = {
+    devPort: ports.devPort,
+    serverPort: ports.serverPort,
+    taskIndex,
+    totalTasks,
   };
+
+  // 重写任务端口配置
+  const rewrittenTask = rewriteTaskPorts(task, context);
+
+  console.log(`🔌 [${task.id}] 使用端口: dev=${ports.devPort}, server=${ports.serverPort}`);
+
+  try {
+    const trial = await runTrial(rewrittenTask, 0, config, progress, context);
+
+    return {
+      taskId: task.id,
+      passed: trial.passed,
+      trial,
+      duration: trial.duration,
+    };
+  } finally {
+    // 释放端口
+    serialPortAllocator.release(task.id);
+  }
 }
 
 /**
@@ -435,10 +497,11 @@ export async function runEval(
   const results: EvalResult[] = [];
 
   // 串行执行任务
-  for (const task of tasks) {
+  for (let i = 0; i < tasks.length; i++) {
+    const task = tasks[i];
     progress.setRunning(task.id);
 
-    const result = await runTask(task, config, progress);
+    const result = await runTask(task, config, progress, i, tasks.length);
     results.push(result);
 
     // 更新进度显示
@@ -640,9 +703,9 @@ async function runTaskWithIsolatedWorkspace(
   let workspace: IsolatedWorkspace | undefined;
 
   try {
-    // 创建隔离的 Workspace
+    // 先创建 workspace 获取分配的端口（不执行 setupScript）
     workspace = await workspaceManager.create(task.id, {
-      setupScript: task.setupScript,
+      setupScript: undefined, // 暂不执行 setupScript
       copyTemplate: true,
     });
 
@@ -653,8 +716,24 @@ async function runTaskWithIsolatedWorkspace(
       totalTasks,
     };
 
-    // 重写任务端口配置
+    // 重写任务端口配置（包括 setupScript 中的端口）
     const rewrittenTask = rewriteTaskPorts(task, context);
+
+    // 执行重写后的 setupScript
+    if (rewrittenTask.setupScript) {
+      try {
+        console.log(`🔧 [Workspace] 执行初始化脚本 (端口: ${context.serverPort})...`);
+        const { execSync } = await import('node:child_process');
+        execSync(rewrittenTask.setupScript, {
+          cwd: workspace.projectDir,
+          stdio: 'pipe',
+          timeout: 30000,
+          shell: true,
+        });
+      } catch (error) {
+        console.warn(`⚠️ [Workspace] 初始化脚本执行失败: ${error}`);
+      }
+    }
 
     console.log(`\n🚀 [Parallel] 开始任务 ${taskIndex + 1}/${totalTasks}: ${task.id}`);
     console.log(`   Workspace: ${workspace.projectDir}`);
