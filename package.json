@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "export http_proxy=http://proxy-aws-us.zhenguanyu.com:8118 && export https_proxy=http://proxy-aws-us.zhenguanyu.com:8118 && concurrently -n \"next,vite\" -c \"blue,green\" \"next dev\" \"cd ./workspace && pnpm dev\"",
+    "dev": "export http_proxy=http://proxy-aws-us.zhenguanyu.com:8118 && export https_proxy=http://proxy-aws-us.zhenguanyu.com:8118 && concurrently -n \"next,vite,agent-aware\" -c \"blue,green,yellow\" \"next dev\" \"cd ./workspace && pnpm dev\" \"cd ./workspace && npx agent-aware-server\"",
     "dev:next": "export http_proxy=http://proxy-aws-us.zhenguanyu.com:8118 && export https_proxy=http://proxy-aws-us.zhenguanyu.com:8118 && next dev",
     "dev:preview": "cd ./workspace && pnpm dev",
     "dev:no-proxy": "next dev",

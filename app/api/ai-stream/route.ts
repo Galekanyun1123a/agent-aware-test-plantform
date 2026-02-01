@@ -77,18 +77,7 @@ createRoot(document.getElementById('root')!).render(
 
 @reskill/agent-aware-server 是服务端组件，用于接收客户端上报的用户行为数据，并通过智能检测器主动发现问题。
 
-### 1. 安装 Agent-Aware Server
-在 ${workspacePath} 目录执行:
-\`\`\`bash
-pnpm add @reskill/agent-aware-server
-\`\`\`
-
-### 2. 启动 Agent-Aware Server
-安装后，在 ${workspacePath} 目录启动服务:
-\`\`\`bash
-npx agent-aware-server
-\`\`\`
-默认监听端口为 4100，可通过 --port 参数指定其他端口。
+**注意**: @reskill/agent-aware-server 已预装在 workspace 中，并会随项目启动自动运行（通过 \`pnpm dev\` 命令），无需手动安装或启动。默认监听端口为 4100。
 
 ### 检测文件位置
 检测结果输出到 \`${workspacePath}/.agent-aware/\` 目录：
