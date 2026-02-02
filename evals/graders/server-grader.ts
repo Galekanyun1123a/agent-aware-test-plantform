@@ -135,14 +135,15 @@ async function startServer(
 }
 
 /**
- * 检查端口是否可用
+ * 检查端口是否响应
  */
 async function checkPort(port: number): Promise<boolean> {
   try {
-    await httpRequest(`http://127.0.0.1:${port}`, { timeout: 2000 });
-    return true;
+    const response = await httpRequest(`http://127.0.0.1:${port}`, { timeout: 2000 });
+    // 任何状态码响应都说明端口在工作
+    return response.status > 0;
   } catch {
-    // 即使返回错误也说明端口已响应
+    // 网络错误（连接超时等），端口可能未响应
     return false;
   }
 }

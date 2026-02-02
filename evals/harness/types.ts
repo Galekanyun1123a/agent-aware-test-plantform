@@ -38,6 +38,8 @@ export interface EvalTask {
   setupScript?: string;
   /** 任务分类 */
   category?: string;
+  /** 使用固定端口（不进行端口重写），用于不支持端口配置的服务如 agent-aware-server */
+  useFixedPort?: boolean;
 }
 
 // ==================== 评分器配置 ====================

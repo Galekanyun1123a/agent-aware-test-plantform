@@ -544,7 +544,7 @@ async function initNodeServerTemplate(envDir: string): Promise<void> {
   // 创建目录结构
   fs.mkdirSync(path.join(envDir, 'src'), { recursive: true });
 
-  // package.json
+  // package.json - 预装 @reskill/agent-aware-server
   const packageJson = {
     name: 'eval-node-server',
     private: true,
@@ -553,6 +553,7 @@ async function initNodeServerTemplate(envDir: string): Promise<void> {
     scripts: {
       start: 'node --experimental-specifier-resolution=node src/server.js',
       dev: 'node --watch src/server.js',
+      'agent-server': 'agent-aware-server',
     },
     dependencies: {
       '@reskill/agent-aware-server': 'latest',

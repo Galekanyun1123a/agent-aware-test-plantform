@@ -1,71 +1,49 @@
 /**
- * 任务 003: 数据收集验证
+ * 任务 003: Agent-Aware 数据收集验证
  *
- * 难度: 中等
- * 评估: 服务器正确解析和处理 agent-aware 发送的数据
+ * 难度: 简单
+ * 评估: 验证 @reskill/agent-aware-server 能正确接收行为数据
+ *
+ * 使用预装的 agent-aware-server，测试数据收集功能。
  */
 
 import type { EvalTask } from '../../harness/types';
 
 export const task: EvalTask = {
   id: '003-data-collection',
-  name: '数据收集验证',
-  description: '验证服务器能正确接收和解析 agent-aware 发送的行为数据',
+  name: 'Agent-Aware 数据收集验证',
+  description: '验证 @reskill/agent-aware-server 能正确接收和处理行为数据',
   category: 'data',
-  // 预先创建服务器文件
-  setupScript: `
-    cat > server.ts << 'EOF'
-import http from 'node:http';
-
-const server = http.createServer((req, res) => {
-  // 设置 CORS 头
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    res.writeHead(200);
-    res.end();
-    return;
-  }
-
-  if (req.method === 'POST' && req.url === '/behaviors') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
-      try {
-        const data = JSON.parse(body);
-        console.log('收到数据:', data);
-        // TODO: 需要添加数据验证和响应
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true }));
-      } catch (error) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Invalid JSON' }));
-      }
-    });
-  } else {
-    res.writeHead(404);
-    res.end('Not Found');
-  }
-});
-
-server.listen(4100, () => {
-  console.log('行为数据服务器运行在 http://localhost:4100');
-});
-EOF
-  `,
+  templateId: 'node-server',
+  // agent-aware-server 只支持固定端口 4100
+  useFixedPort: true,
   userMessages: [
-    '当前 server.ts 文件缺少完整的数据验证。请修改代码，添加以下功能：1) 验证请求数据包含 event_type 和 timestamp 字段 2) 如果缺少必填字段，返回 400 错误和详细错误信息 3) 在响应中返回接收到的数据字段',
+    '请启动 @reskill/agent-aware-server 服务（使用 npx agent-aware-server），然后创建一个测试脚本 test-collect.js，向 http://localhost:4100/behaviors 发送测试数据，验证服务是否正常工作。测试数据应包含 event_type 和 timestamp 字段。',
   ],
   graders: [
+    {
+      type: 'code',
+      checks: {
+        fileExists: ['test-collect.js'],
+        fileContains: [
+          {
+            file: 'test-collect.js',
+            pattern: '(fetch|http\\.request|axios)',
+          },
+          {
+            file: 'test-collect.js',
+            pattern: '/behaviors',
+          },
+        ],
+      },
+    },
     {
       type: 'server',
       port: 4100,
       endpoint: '/behaviors',
       method: 'POST',
       timeout: 30000,
-      startCommand: 'npx tsx server.ts',
+      startCommand: 'npx agent-aware-server',
     },
     {
       type: 'data-collection',
@@ -82,14 +60,9 @@ EOF
           timestamp: 1706601601000,
           payload: { position: 500 },
         },
-        {
-          event_type: 'input',
-          timestamp: 1706601602000,
-          payload: { field: 'email', value: 'test@example.com' },
-        },
       ],
       expectedFields: ['event_type', 'timestamp'],
     },
   ],
-  timeout: 180000,
+  timeout: 120000,
 };

@@ -1,32 +1,36 @@
 /**
- * 任务 002: 行为数据服务器启动
+ * 任务 002: Agent-Aware 服务器启动
  *
- * 难度: 中等
- * 评估: 创建并启动 4100 端口的行为数据收集服务器
+ * 难度: 简单
+ * 评估: 在 package.json 中配置并启动 @reskill/agent-aware-server
+ *
+ * @reskill/agent-aware-server 是预装的服务端组件，用于接收客户端上报的用户行为数据。
+ * 默认监听 4100 端口，提供 POST /behaviors 端点。
  */
 
 import type { EvalTask } from '../../harness/types';
 
 export const task: EvalTask = {
   id: '002-server-startup',
-  name: '行为服务器启动',
-  description: '创建一个 HTTP 服务器，用于接收用户行为数据',
+  name: 'Agent-Aware 服务器启动',
+  description: '配置并启动 @reskill/agent-aware-server 行为数据收集服务',
   category: 'server',
   templateId: 'node-server',
+  // agent-aware-server 只支持固定端口 4100，不进行端口重写
+  useFixedPort: true,
   userMessages: [
-    '请修改 src/server.js 文件（或创建 src/server.ts），实现一个 Node.js HTTP 服务器，要求：1) 从环境变量 PORT 获取监听端口 2) 提供 POST /behaviors 端点 3) 接收 JSON 格式的请求体 4) 返回 200 状态码和 JSON 响应表示接收成功。',
+    '项目中已预装 @reskill/agent-aware-server。请在 package.json 的 scripts 中添加 "agent-server": "agent-aware-server" 脚本，用于启动行为数据收集服务。该服务默认监听 4100 端口。',
   ],
   graders: [
     {
       type: 'code',
       checks: {
-        // 接受两种路径
-        fileExists: ['src/server.js'],
+        fileExists: ['package.json'],
         fileContains: [
           {
-            file: 'src/server.js',
-            // 检查是否有 /behaviors 端点
-            pattern: '/behaviors',
+            file: 'package.json',
+            // 检查是否添加了 agent-aware-server 启动脚本
+            pattern: 'agent-aware-server',
           },
         ],
       },
@@ -37,9 +41,9 @@ export const task: EvalTask = {
       endpoint: '/behaviors',
       method: 'POST',
       timeout: 30000,
-      // 使用模板自带的启动命令
-      startCommand: 'node src/server.js',
+      // 使用 agent-aware-server CLI
+      startCommand: 'npx agent-aware-server',
     },
   ],
-  timeout: 180000,
+  timeout: 120000,
 };

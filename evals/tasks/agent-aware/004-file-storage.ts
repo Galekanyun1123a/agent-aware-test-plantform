@@ -1,71 +1,45 @@
 /**
- * 任务 004: 文件持久化存储
+ * 任务 004: Agent-Aware 数据存储验证
  *
- * 难度: 中等
- * 评估: 将收集的行为数据持久化存储到文件中
+ * 难度: 简单
+ * 评估: 验证 @reskill/agent-aware-server 的数据存储功能
+ *
+ * agent-aware-server 会自动将收集的数据存储到 data/ 目录。
  */
 
 import type { EvalTask } from '../../harness/types';
 
 export const task: EvalTask = {
   id: '004-file-storage',
-  name: '文件持久化存储',
-  description: '将收集到的行为数据持久化存储到 JSON 文件中',
+  name: 'Agent-Aware 数据存储验证',
+  description: '验证 @reskill/agent-aware-server 能正确存储行为数据到文件',
   category: 'storage',
-  // 预先创建基础服务器
-  setupScript: `
-    mkdir -p data
-    cat > server.ts << 'EOF'
-import http from 'node:http';
-
-const server = http.createServer((req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    res.writeHead(200);
-    res.end();
-    return;
-  }
-
-  if (req.method === 'POST' && req.url === '/behaviors') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
-      try {
-        const data = JSON.parse(body);
-        // TODO: 将数据保存到 data/behaviors.json 文件
-        // 要求：追加存储，而非覆盖
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true }));
-      } catch (error) {
-        res.writeHead(400);
-        res.end(JSON.stringify({ error: 'Invalid JSON' }));
-      }
-    });
-  } else {
-    res.writeHead(404);
-    res.end('Not Found');
-  }
-});
-
-server.listen(4100, () => {
-  console.log('服务器运行在 http://localhost:4100');
-});
-EOF
-  `,
+  templateId: 'node-server',
+  // agent-aware-server 只支持固定端口 4100
+  useFixedPort: true,
   userMessages: [
-    '请修改 server.ts，实现数据持久化功能：1) 将收到的行为数据追加存储到 data/behaviors.json 文件 2) 如果文件不存在则创建 3) 使用 JSON 数组格式存储多条记录 4) 每次追加新数据而不是覆盖',
+    '请启动 @reskill/agent-aware-server 服务，然后向 http://localhost:4100/behaviors 发送几条测试数据。发送后检查 data/ 目录，确认数据是否被正确存储。请创建一个 send-data.js 脚本来发送测试数据。',
   ],
   graders: [
+    {
+      type: 'code',
+      checks: {
+        fileExists: ['send-data.js'],
+        fileContains: [
+          {
+            file: 'send-data.js',
+            pattern: '(fetch|http\\.request|axios)',
+          },
+        ],
+      },
+    },
     {
       type: 'server',
       port: 4100,
       endpoint: '/behaviors',
       method: 'POST',
       timeout: 30000,
-      startCommand: 'npx tsx server.ts',
+      startCommand: 'npx agent-aware-server',
     },
     {
       type: 'storage',
@@ -73,21 +47,6 @@ EOF
       minRecords: 1,
       expectedFields: ['event_type', 'timestamp'],
     },
-    {
-      type: 'code',
-      checks: {
-        fileContains: [
-          {
-            file: 'server.ts',
-            pattern: 'writeFile|appendFile|fs\\.',
-          },
-          {
-            file: 'server.ts',
-            pattern: 'data/behaviors\\.json|behaviors\\.json',
-          },
-        ],
-      },
-    },
   ],
-  timeout: 180000,
+  timeout: 120000,
 };

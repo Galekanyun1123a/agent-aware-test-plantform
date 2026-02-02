@@ -60,8 +60,9 @@ export class WorkspaceManager {
     setupScript?: string;
     copyTemplate?: boolean;
     installDeps?: boolean;
+    templateId?: 'vite-react' | 'node-server';
   } = {}): Promise<IsolatedWorkspace> {
-    const { setupScript, copyTemplate = true, installDeps = true } = options;
+    const { setupScript, copyTemplate = true, installDeps = true, templateId = 'vite-react' } = options;
     
     // 生成唯一 ID
     const id = `${taskId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -79,7 +80,11 @@ export class WorkspaceManager {
 
     // 复制模板（如果需要）
     if (copyTemplate) {
-      await this.initializeTemplate(projectDir, ports.devPort);
+      if (templateId === 'node-server') {
+        await this.initializeNodeServerTemplate(projectDir);
+      } else {
+        await this.initializeTemplate(projectDir, ports.devPort);
+      }
     }
 
     // 安装依赖
@@ -310,6 +315,102 @@ export default App
       path.join(projectDir, 'src/vite-env.d.ts'),
       '/// <reference types="vite/client" />\n'
     );
+  }
+
+  /**
+   * 初始化 Node.js 服务器模板
+   * @param projectDir 项目目录
+   */
+  private async initializeNodeServerTemplate(projectDir: string): Promise<void> {
+    console.log(`📦 [Workspace] 初始化 Node.js 服务器模板...`);
+
+    // 创建目录结构
+    fs.mkdirSync(path.join(projectDir, 'src'), { recursive: true });
+    fs.mkdirSync(path.join(projectDir, 'data'), { recursive: true });
+
+    // package.json - 预装 @reskill/agent-aware-server
+    const packageJson = {
+      name: 'eval-node-server',
+      private: true,
+      version: '0.0.0',
+      type: 'module',
+      scripts: {
+        start: 'node --experimental-specifier-resolution=node src/server.js',
+        dev: 'node --watch src/server.js',
+        'agent-server': 'agent-aware-server',
+      },
+      dependencies: {
+        '@reskill/agent-aware-server': 'latest',
+      },
+      devDependencies: {
+        '@types/node': '^20.0.0',
+        typescript: '^5.0.0',
+      },
+    };
+    fs.writeFileSync(
+      path.join(projectDir, 'package.json'),
+      JSON.stringify(packageJson, null, 2)
+    );
+
+    // src/server.js - 基础服务器（包含 /behaviors 端点）
+    const serverJs = `import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
+
+const PORT = process.env.PORT || 4100;
+const DATA_DIR = path.join(process.cwd(), 'data');
+
+// 确保数据目录存在
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+const server = http.createServer((req, res) => {
+  // 设置 CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(200);
+    res.end();
+    return;
+  }
+
+  // POST /behaviors - 接收用户行为数据
+  if (req.url === '/behaviors' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => { body += chunk.toString(); });
+    req.on('end', () => {
+      try {
+        const data = JSON.parse(body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, message: '数据接收成功' }));
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid JSON' }));
+      }
+    });
+    return;
+  }
+
+  // 健康检查
+  if (req.url === '/health' && req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ status: 'ok' }));
+    return;
+  }
+
+  // 404
+  res.writeHead(404, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ error: 'Not found' }));
+});
+
+server.listen(PORT, () => {
+  console.log(\`Server running on port \${PORT}\`);
+});
+`;
+    fs.writeFileSync(path.join(projectDir, 'src/server.js'), serverJs);
   }
 
   /**

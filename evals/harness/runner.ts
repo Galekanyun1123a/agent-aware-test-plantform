@@ -247,8 +247,15 @@ function replacePortPlaceholders(str: string, context: TaskContext): string {
  * 1. graders 配置中的 port 字段
  * 2. setupScript 中的端口占位符和硬编码端口
  * 3. userMessages 中的端口占位符和硬编码端口
+ *
+ * 如果任务设置了 useFixedPort: true，则跳过端口重写（用于不支持端口配置的服务）
  */
 function rewriteTaskPorts(task: EvalTask, context: TaskContext): EvalTask {
+  // 如果使用固定端口，不进行重写
+  if (task.useFixedPort) {
+    return task;
+  }
+
   // 1. 重写 graders 中的端口
   const rewrittenGraders = task.graders.map((grader) => {
     if (grader.type === 'server') {
@@ -707,6 +714,7 @@ async function runTaskWithIsolatedWorkspace(
     workspace = await workspaceManager.create(task.id, {
       setupScript: undefined, // 暂不执行 setupScript
       copyTemplate: true,
+      templateId: task.templateId === 'node-server' ? 'node-server' : 'vite-react',
     });
 
     const context: TaskContext = {
